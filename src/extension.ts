@@ -2,10 +2,14 @@ import * as vscode from 'vscode';
 import { moveCursor, cursorTo } from 'readline';
 import { start } from 'repl';
 
-function jumpToMatchingTag(editor:vscode.TextEditor, position:vscode.Position, currentLineNum:number) {
+function jumpToMatchingTag(editor:vscode.TextEditor, position:vscode.Position) {
+  const currentLineNum = position.line;
   const line = editor.document.lineAt(currentLineNum).text; // get current line text
+
+  // character under cursor
   const followingChar = editor.document.getText(new vscode.Range(position, new vscode.Position(currentLineNum, position.character + 1)));
-  if('{}[]()'.indexOf(followingChar) >=0) {
+
+  if('{}[]()'.indexOf(followingChar) >= 0) {
     vscode.commands.executeCommand('editor.action.jumpToBracket');
   } else if(line.match(/^[ \t]*(<[A-Za-z]|<\/[A-Za-z][a-zA-Z0-9]*)/)) {
     vscode.commands.executeCommand('editor.emmet.action.matchTag');
@@ -32,8 +36,7 @@ export function activate(context: vscode.ExtensionContext) {
       return;
     }
     const startPosition =  editor.selection.active;
-    const currentLineNum = startPosition.line;
-    jumpToMatchingTag(editor, startPosition, currentLineNum);
+    jumpToMatchingTag(editor, startPosition);
   });
 
   let disposableSelectItems = vscode.commands.registerCommand('extension.matchitSelectItems', () => {
@@ -43,8 +46,9 @@ export function activate(context: vscode.ExtensionContext) {
       return;
     }
     const startPosition =  editor.selection.active;
-    const currentLineNum = startPosition.line;
-    jumpToMatchingTag(editor, startPosition, currentLineNum);
+    jumpToMatchingTag(editor, startPosition);
+
+    // wait cursor position stablized
     setTimeout(() => {
       const endPosition = editor.selection.active;
       // same line

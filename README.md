@@ -10,11 +10,9 @@ It's generic enough to support HTML/CSS/C/C++/Java/Perl/Javascript.
 ## Features
 Press `Ctrl+Shift+\` (on Mac it's `CMD+Shift+\`) or run command `MatchIt: Jump Items` to jump between HTML tags or brackets
 
-Run command `MatchIt: Select Items` could select area marked by matching tags or brackets.
+Run command `MatchIt: Select Items` to select area marked by matching tags or brackets.
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
-
-For example, in below code, if cursor is at the beginning or end of class, function, conditional statement, html tag, you can use all commands from this extension.
+In below code, if cursor is at the beginning or end of class, function, conditional statement, html tag, you can use all commands from this extension.
 
 Please note the cursor is not required exactly over the bracket character. The matching algorithm is smart enough to find correct matching item automatically.
 ```jsx
