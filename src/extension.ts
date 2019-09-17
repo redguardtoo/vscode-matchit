@@ -26,46 +26,70 @@ function jumpToMatchingTag(editor:vscode.TextEditor, position:vscode.Position) {
   }
 }
 
+function jumpItems() {
+  // Only useful when coding in a text editor
+  const editor = vscode.window.activeTextEditor;
+  if (!editor) {
+    return;
+  }
+  const startPosition =  editor.selection.active;
+  jumpToMatchingTag(editor, startPosition);
+}
+
+function selectItemsInternal(fn:any) {
+  // Only useful when coding in a text editor
+  const editor = vscode.window.activeTextEditor;
+  if (!editor) {
+    return;
+  }
+  const startPosition =  editor.selection.active;
+  jumpToMatchingTag(editor, startPosition);
+
+  // wait cursor position stablized
+  setTimeout(() => {
+    const endPosition = editor.selection.active;
+    // same line
+    if(startPosition.line === endPosition.line) {
+      editor.selection = new vscode.Selection(startPosition, endPosition);
+      if(fn) {
+        fn(editor);
+      }
+    } else {
+      // try to select whole line
+      const topDown = startPosition.line < endPosition.line;
+      const anchor = new vscode.Position(startPosition.line, topDown ? 0 : editor.document.lineAt(startPosition.line).text.length + 2);
+      const active = new vscode.Position(endPosition.line, topDown ? editor.document.lineAt(endPosition.line).text.length + 2 : 0);
+      editor.selection = new vscode.Selection(anchor, active);
+      if(fn) {
+        fn(editor);
+      }
+    }
+  }, 200);
+}
+
+function selectItems() {
+  selectItemsInternal(null);
+}
+
+function deleteItems() {
+  selectItemsInternal((editor:vscode.TextEditor) => {
+    editor.edit(builder => {
+      builder.replace(editor.selection, '');
+    });
+  });
+}
+
 export function activate(context: vscode.ExtensionContext) {
   console.log('Congratulations, your extension "matchit" is now active!');
 
-  let disposableJumpItems = vscode.commands.registerCommand('extension.matchitJumpItems', () => {
-    // Only useful when coding in a text editor
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) {
-      return;
-    }
-    const startPosition =  editor.selection.active;
-    jumpToMatchingTag(editor, startPosition);
-  });
-
-  let disposableSelectItems = vscode.commands.registerCommand('extension.matchitSelectItems', () => {
-    // Only useful when coding in a text editor
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) {
-      return;
-    }
-    const startPosition =  editor.selection.active;
-    jumpToMatchingTag(editor, startPosition);
-
-    // wait cursor position stablized
-    setTimeout(() => {
-      const endPosition = editor.selection.active;
-      // same line
-      if(startPosition.line === endPosition.line) {
-        editor.selection = new vscode.Selection(startPosition, endPosition);
-      } else {
-        // try to select whole line
-        const topDown = startPosition.line < endPosition.line;
-        const anchor = new vscode.Position(startPosition.line, topDown ? 0 : editor.document.lineAt(startPosition.line).text.length + 2);
-        const active = new vscode.Position(endPosition.line, topDown ? editor.document.lineAt(endPosition.line).text.length + 2 : 0);
-        editor.selection = new vscode.Selection(anchor, active);
-      }
-    }, 200)
-  });
-
-  context.subscriptions.push(disposableJumpItems);
-  context.subscriptions.push(disposableSelectItems);
+  const commands: {id: string, callback: any} [] = [
+    {id: 'extension.matchitJumpItems', callback: jumpItems,},
+    {id: 'extension.matchitSelectItems', callback: selectItems,},
+    {id: 'extension.matchitDeleteItems', callback: deleteItems,},
+  ];
+  for(const c of commands) {
+    context.subscriptions.push(vscode.commands.registerCommand(c.id, c.callback));
+  }
 }
 
 export function deactivate() {}

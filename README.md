@@ -5,6 +5,8 @@ The extension provides the command `MatchIt: Jump Items` to jump between HTML ta
 
 It's generic enough to support HTML/CSS/C/C++/Java/Perl/Javascript.
 
+There are also commands `Matchit: Select Items` and `Matchit: Delete Items`.
+
 ![Demo](https://raw.githubusercontent.com/redguardtoo/vscode-matchit/master/demo.gif)
 
 ## Features
@@ -56,6 +58,11 @@ You can also set custom shortcuts in `keybindings.json` via `Code => Preferences
     "command": "extension.matchitSelectItems",
     "when": "editorTextFocus"
   },
+  {
+    "key": "ctrl+shift+/",
+    "command": "extension.matchitDeleteItems",
+    "when": "editorTextFocus"
+  }
 ]
 ```
 
