@@ -9,7 +9,7 @@ function jumpToMatchingTag(editor:vscode.TextEditor, position:vscode.Position) {
   // character under cursor
   const followingChar = editor.document.getText(new vscode.Range(position, new vscode.Position(currentLineNum, position.character + 1)));
 
-  if('{}[]()'.indexOf(followingChar) >= 0) {
+  if(followingChar && '{}[]()'.indexOf(followingChar) >= 0) {
     vscode.commands.executeCommand('editor.action.jumpToBracket');
   } else if(line.match(/^[ \t]*(<[A-Za-z]|<\/[A-Za-z][a-zA-Z0-9]*)/)) {
     vscode.commands.executeCommand('editor.emmet.action.matchTag');
@@ -32,7 +32,7 @@ function jumpItems() {
   if (!editor) {
     return;
   }
-  const startPosition =  editor.selection.active;
+  const startPosition = editor.selection.active;
   jumpToMatchingTag(editor, startPosition);
 }
 
@@ -42,29 +42,44 @@ function selectItemsInternal(fn:any) {
   if (!editor) {
     return;
   }
-  const startPosition =  editor.selection.active;
-  jumpToMatchingTag(editor, startPosition);
 
-  // wait cursor position stablized
+  const isVisualLine = editor.selection.anchor.character === 0;
+  vscode.commands.executeCommand('cancelSelection');
+
   setTimeout(() => {
-    const endPosition = editor.selection.active;
-    // same line
-    if(startPosition.line === endPosition.line) {
-      editor.selection = new vscode.Selection(startPosition, endPosition);
-      if(fn) {
-        fn(editor);
+    const startPosition = editor.selection.active;
+    jumpToMatchingTag(editor, startPosition);
+
+    // wait cursor position stablized
+    setTimeout(() => {
+      const endPosition = editor.selection.active;
+      // same line
+      if(startPosition.line === endPosition.line) {
+        editor.selection = new vscode.Selection(startPosition, endPosition);
+        if(fn) {
+          fn(editor);
+        }
+      } else {
+        // try to select whole line
+        const topDown = startPosition.line < endPosition.line;
+        const anchor = new vscode.Position(
+          startPosition.line,
+          isVisualLine
+            ? 0
+            : editor.document.lineAt(startPosition.line).text.length - 1
+        );
+        const active = new vscode.Position(
+          endPosition.line,
+          editor.document.lineAt(endPosition.line).text.length +
+            (isVisualLine ? 2 : -1)
+        );
+        editor.selection = new vscode.Selection(anchor, active);
+        if(fn) {
+          fn(editor);
+        }
       }
-    } else {
-      // try to select whole line
-      const topDown = startPosition.line < endPosition.line;
-      const anchor = new vscode.Position(startPosition.line, topDown ? 0 : editor.document.lineAt(startPosition.line).text.length + 2);
-      const active = new vscode.Position(endPosition.line, topDown ? editor.document.lineAt(endPosition.line).text.length + 2 : 0);
-      editor.selection = new vscode.Selection(anchor, active);
-      if(fn) {
-        fn(editor);
-      }
-    }
-  }, 200);
+    }, 150);
+  }, 150);
 }
 
 function selectItems() {
