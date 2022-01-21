@@ -2,27 +2,57 @@ import * as vscode from 'vscode';
 import { moveCursor, cursorTo } from 'readline';
 import { start } from 'repl';
 
-function jumpToMatchingTag(editor:vscode.TextEditor, position:vscode.Position) {
+function bracketAtPoint(followingChar:string, currentLine:string) {
+  return followingChar && '{}[]()'.indexOf(followingChar) >= 0 ? followingChar : null;
+}
+
+function bracketAtLineEnd(followingChar:string, currentLine:string) {
+  const m = currentLine.match(/^[ \t]*[A-Za-z].*[ \t]*([\{\(\[])[ \t]*$/);
+  return m && m[1];
+}
+
+function bracketJump(followingChar:string, currentLine:string, tagAtPoint: any) {
+  vscode.commands.executeCommand('editor.action.jumpToBracket');
+}
+
+function htmlTagAtPoint(followingChar:string, currentLine:string) {
+  const m = currentLine.match(/^[ \t]*(<\/?[A-Za-z][a-zA-Z0-9]*)/);
+  // strip "</" and "<"
+  return m && m[1].replace(/^<\/?/, '');
+}
+
+function htmlTagJump(followingChar:string, currentLine:string, tagAtPoint: any) {
+  vscode.commands.executeCommand('editor.emmet.action.matchTag');
+}
+
+function getInfoAtPoint(editor:vscode.TextEditor, position:vscode.Position) {
   const currentLineNum = position.line;
-  const line = editor.document.lineAt(currentLineNum).text; // get current line text
+  const currentLine = editor.document.lineAt(currentLineNum).text; // get current line text
 
   // character under cursor
   const followingChar = editor.document.getText(new vscode.Range(position, new vscode.Position(currentLineNum, position.character + 1)));
+  return {followingChar, currentLine, currentLineNum,};
+}
 
-  if(followingChar && '{}[]()'.indexOf(followingChar) >= 0) {
-    vscode.commands.executeCommand('editor.action.jumpToBracket');
-  } else if(line.match(/^[ \t]*(<[A-Za-z]|<\/[A-Za-z][a-zA-Z0-9]*)/)) {
-    vscode.commands.executeCommand('editor.emmet.action.matchTag');
-  } else if(line.match(/^[ \t]*[A-Za-z].*[ \t]*[\{\(\[]$/)) {
-    const lineEndPos = new vscode.Position(currentLineNum, line.length - 1);
+function jumpToMatchingTag(editor:vscode.TextEditor, position:vscode.Position) {
+  const {followingChar, currentLine, currentLineNum,} = getInfoAtPoint(editor, position);
+  let tagAtPoint = null;
+
+  if(tagAtPoint = bracketAtPoint(followingChar, currentLine)) {
+    bracketJump(followingChar, currentLine, tagAtPoint);
+  } else if(tagAtPoint = htmlTagAtPoint(followingChar, currentLine)) {
+    htmlTagJump(followingChar, currentLine, tagAtPoint);
+  } else if(tagAtPoint = bracketAtLineEnd(followingChar, currentLine)) {
+    // adjust cursor position
+    const lineEndPos = new vscode.Position(currentLineNum, currentLine.length - 1);
     if(editor.selection.isEmpty) {
       editor.selection = new vscode.Selection(lineEndPos, lineEndPos);
     } else {
       editor.selection = new vscode.Selection(editor.selection.anchor, lineEndPos);
     }
-    vscode.commands.executeCommand('editor.action.jumpToBracket');
+    bracketJump(followingChar, currentLine, tagAtPoint);
   } else {
-    vscode.commands.executeCommand('editor.action.jumpToBracket');
+    bracketJump(followingChar, currentLine, tagAtPoint);
   }
 }
 
