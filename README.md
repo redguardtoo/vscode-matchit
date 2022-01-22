@@ -1,5 +1,5 @@
 # [matchit](https://github.com/redguardtoo/vscode-matchit)
-Jump between matching HTML tags and brackets smartly in VS Code. It's ported from [Vim matchit](http://www.vim.org/scripts/script.php?script_id=39) by Benji Fisher.
+Jump between matching HTML tags, brackets and other items in VS Code. It's ported from [Vim matchit](http://www.vim.org/scripts/script.php?script_id=39) by Benji Fisher.
 
 The extension provides the command `MatchIt: Jump Items` to jump between HTML tags or brackets to help Javascript developer using JSX and React.
 
@@ -43,7 +43,11 @@ export default class DropdownWithFilter extends PureComponent {
 }
 ```
 
-## Custom Keybinding
+Jumping between matched items in other programming languages are also doable. For example, users can jump between C/C++ macros.
+
+Feel free to send me the patch or raise a feature request.
+
+# Custom Keybinding
 You can also set custom shortcuts in `keybindings.json` via `Code => Preferences => Keyboard Shortcuts`.
 
 ```javascript

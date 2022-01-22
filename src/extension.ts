@@ -1,74 +1,77 @@
 import * as vscode from 'vscode';
-import { moveCursor, cursorTo } from 'readline';
-import { start } from 'repl';
+import * as sdk from './sdk';
 
-function bracketAtPoint(followingChar:string, currentLine:string) {
-  return followingChar && '{}[]()'.indexOf(followingChar) >= 0 ? followingChar : null;
+function bracketAtPoint() {
+  const ch = sdk.getCharAtPoint();
+  return ch && '{}[]()'.indexOf(ch) >= 0 ? ch : null;
 }
 
-function bracketAtLineEnd(followingChar:string, currentLine:string) {
+function bracketAtLineEnd() {
+  const currentLine = sdk.getCurrentLineText();
   const m = currentLine.match(/^[ \t]*[A-Za-z].*[ \t]*([\{\(\[])[ \t]*$/);
   return m && m[1];
 }
 
-function bracketJump(followingChar:string, currentLine:string, tagAtPoint: any) {
+function bracketJump(tagAtPoint: any) {
   vscode.commands.executeCommand('editor.action.jumpToBracket');
 }
 
-function htmlTagAtPoint(followingChar:string, currentLine:string) {
+function htmlTagAtPoint() {
+  const currentLine = sdk.getCurrentLineText();
   const m = currentLine.match(/^[ \t]*(<\/?[A-Za-z][a-zA-Z0-9]*)/);
   // strip "</" and "<"
   return m && m[1].replace(/^<\/?/, '');
 }
 
-function htmlTagJump(followingChar:string, currentLine:string, tagAtPoint: any) {
+function htmlTagJump() {
   vscode.commands.executeCommand('editor.emmet.action.matchTag');
 }
 
-function getInfoAtPoint(editor:vscode.TextEditor, position:vscode.Position) {
-  const currentLineNum = position.line;
-  const currentLine = editor.document.lineAt(currentLineNum).text; // get current line text
-
-  // character under cursor
-  const followingChar = editor.document.getText(new vscode.Range(position, new vscode.Position(currentLineNum, position.character + 1)));
-  return {followingChar, currentLine, currentLineNum,};
-}
-
-function jumpToMatchingTag(editor:vscode.TextEditor, position:vscode.Position) {
-  const {followingChar, currentLine, currentLineNum,} = getInfoAtPoint(editor, position);
-  let tagAtPoint = null;
-
-  if(tagAtPoint = bracketAtPoint(followingChar, currentLine)) {
-    bracketJump(followingChar, currentLine, tagAtPoint);
-  } else if(tagAtPoint = htmlTagAtPoint(followingChar, currentLine)) {
-    htmlTagJump(followingChar, currentLine, tagAtPoint);
-  } else if(tagAtPoint = bracketAtLineEnd(followingChar, currentLine)) {
-    // adjust cursor position
-    const lineEndPos = new vscode.Position(currentLineNum, currentLine.length - 1);
-    if(editor.selection.isEmpty) {
-      editor.selection = new vscode.Selection(lineEndPos, lineEndPos);
-    } else {
-      editor.selection = new vscode.Selection(editor.selection.anchor, lineEndPos);
-    }
-    bracketJump(followingChar, currentLine, tagAtPoint);
-  } else {
-    bracketJump(followingChar, currentLine, tagAtPoint);
-  }
-}
-
-function jumpItems() {
-  // Only useful when coding in a text editor
-  const editor = vscode.window.activeTextEditor;
-  if (!editor) {
+function jumpItemsInternal() {
+  const editor = sdk.getEditor();
+  if(!editor) {
     return;
   }
-  const startPosition = editor.selection.active;
-  jumpToMatchingTag(editor, startPosition);
+
+  let tagAtPoint = null;
+
+  tagAtPoint = bracketAtPoint();
+  if(tagAtPoint !== null) {
+    bracketJump(tagAtPoint);
+    return;
+  }
+
+  tagAtPoint = htmlTagAtPoint();
+  if(tagAtPoint !== null) {
+    htmlTagJump();
+    return;
+  }
+
+  tagAtPoint = bracketAtLineEnd();
+  if(tagAtPoint !== null) {
+    // adjust cursor position
+    const lineEndPos = new vscode.Position(sdk.getCurrentLineNumber(), sdk.getCurrentLineText().length - 1);
+    sdk.gotoChar(lineEndPos);
+    bracketJump(tagAtPoint);
+    return;
+  }
+
+  if(sdk.languageMatched(['c', 'cpp'])) {
+    const cpp =  require('./cpp');
+    tagAtPoint = cpp.cppMacroAtPoint();
+    if(tagAtPoint !== null) {
+      cpp.cppMacroJump(tagAtPoint);
+      return;
+    }
+  }
+
+  bracketJump(tagAtPoint);
 }
+
 
 function selectItemsInternal(fn:any) {
   // Only useful when coding in a text editor
-  const editor = vscode.window.activeTextEditor;
+  const editor = sdk.getEditor();
   if (!editor) {
     return;
   }
@@ -77,8 +80,11 @@ function selectItemsInternal(fn:any) {
   vscode.commands.executeCommand('cancelSelection');
 
   setTimeout(() => {
-    const startPosition = editor.selection.active;
-    jumpToMatchingTag(editor, startPosition);
+    const startPosition = sdk.getCursorPosition();
+    if(!startPosition) {
+      return;
+    }
+    jumpItemsInternal();
 
     // wait cursor position stablized
     setTimeout(() => {
@@ -110,6 +116,10 @@ function selectItemsInternal(fn:any) {
       }
     }, 150);
   }, 150);
+}
+
+function jumpItems() {
+  jumpItemsInternal();
 }
 
 function selectItems() {

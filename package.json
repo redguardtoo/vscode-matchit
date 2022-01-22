@@ -2,8 +2,8 @@
   "name": "matchit",
   "displayName": "matchit",
   "publisher": "redguardtoo",
-  "description": "Jump between matching HTML tags and brackets smartly in VS Code. It's ported from Vim matchit by Benji Fisher",
-  "version": "1.1.0",
+  "description": "Jump between matching HTML tags, brackets and other item in VSCode. It's ported from Vim matchit by Benji Fisher",
+  "version": "2.0.0",
   "engines": {
     "vscode": "^1.37.0"
   },
