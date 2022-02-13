@@ -3,9 +3,9 @@
   "displayName": "matchit",
   "publisher": "redguardtoo",
   "description": "Jump between matching HTML tags, brackets and other item in VSCode. It's ported from Vim matchit by Benji Fisher",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "engines": {
-    "vscode": "^1.37.0"
+    "vscode": "^1.64.0"
   },
   "categories": [
     "Other"
@@ -49,11 +49,9 @@
     "theme": "dark"
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
-    "pretest": "npm run compile",
-    "test": "node ./out/test/runTest.js"
+    "vscode:publish": "npm run compile && vsce package && vsce publish",
+    "test": "npm run compile && node ./out/test/runTest.js"
   },
   "devDependencies": {
     "@types/glob": "^7.1.1",
@@ -62,8 +60,8 @@
     "@types/vscode": "^1.37.0",
     "glob": "^7.1.4",
     "mocha": "^6.1.4",
-    "typescript": "^3.3.1",
-    "tslint": "^5.12.1",
+    "typescript": "^3.9.10",
+    "vsce": "^2.6.7",
     "vscode-test": "^1.0.2"
   }
 }

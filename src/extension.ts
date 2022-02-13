@@ -1,5 +1,9 @@
 import * as vscode from 'vscode';
 import * as sdk from './sdk';
+ // maybe it's not efficient to import the lib statically
+ // but vscode package system makes me crazy
+ // besizes, vscode users might not be as picky as emacs users
+import * as cpp from './cpp';
 
 function bracketAtPoint() {
   const ch = sdk.getCharAtPoint();
@@ -57,7 +61,6 @@ function jumpItemsInternal() {
   }
 
   if(sdk.languageMatched(['c', 'cpp'])) {
-    const cpp =  require('./cpp');
     tagAtPoint = cpp.cppMacroAtPoint();
     if(tagAtPoint !== null) {
       cpp.cppMacroJump(tagAtPoint);
